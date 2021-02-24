@@ -1,0 +1,9 @@
+name,condition,problem
+consensus_note,"consensus_note==""no""",No consentment
+activity_agriculture_perturbated,"sm_selected(activity_agriculture_perturbated,any = c(""lack_rain""))",Lack of rain in a dry season and out of season agriculture
+edu_reasons,"edu_reasons==""holidays""",Holidays are already over. Are they localities where students are still in holidays
+shelter_destruction_reason,"shelter_destruction_reason==""floods""",floods in a dry season!
+ki_age,"ki_age>50 & ki_profession==""student""",Ki age +50 but still student
+no_food_reasons,"sm_selected(no_food_reasons, any = c(""no_markets"")) & access_market==""yes""",Lack of food beacause no markets are availables but KI reported access to market
+groupes_presents,"sm_selected(groupes_presents,any = c(""refugie"")) & refugies_source_admin0==""niger""",Groupe de population present dans la localite uniquement PDI ou Réfugie
+water_distance,"water_source %in% c(""inside_shelter"",""tap"") & water_distance!=""less_30_min""",Water source is inside shelter but distance to water source is more than 30min

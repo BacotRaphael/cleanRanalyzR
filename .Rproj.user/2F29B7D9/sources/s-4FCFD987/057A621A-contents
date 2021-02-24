@@ -1,0 +1,95 @@
+rm(list = ls())
+
+source("code/map_to_master_table.R")
+remove.packages("hypegrammaR", c(.libPaths(),"C:/Users/REACH/Documents/R/win-library/3.4"))
+Sys.setenv("R_REMOTES_NO_ERRORS_FROM_WARNINGS"=TRUE)
+devtools::install_github("mabafaba/hypegrammaR", build_opts = c())
+devtools::install_github("hedibmustapha/hypegrammaR", build_opts = c())
+library(hypegrammaR)
+library(parallel)
+library(dplyr)
+
+
+questions <- read.csv("./input/edited_survey_datamerge.csv", stringsAsFactors = F)
+choices <- read.csv("./input/edited_choices_datamerge.csv", stringsAsFactors = F)
+choices$label..English..en. <- gsub("^\\d+[.]\\s*","", choices$label..English..en.)
+data <- load_data(file = "./input/data.csv")
+data <- mutate_if(data, is.character, na_if, "")
+sampling_frame <- load_samplingframe(file = "./input/sampling_frame.csv")
+
+questionnaire <- load_questionnaire(data = data,
+                                    questions = questions,
+                                    choices = choices,
+                                    choices.label.column.to.use = "label::English (en)")
+analysisplan <- load_analysisplan(file = "./input/analysisplan.csv")
+
+kobostandards::check_input(data = data, questions = questions, choices = choices ,samplingframe = sampling_frame,
+                           analysisplan = analysisplan_groups) %>% write.csv("./output/check_input.csv")
+
+weights <-map_to_weighting(sampling.frame = sampling_frame,
+                           data.stratum.column = "strata.names",
+                           sampling.frame.population.column = "population",
+                           sampling.frame.stratum.column = "strata.names",
+                           data = data)
+
+results <- from_analysisplan_map_to_output(data = data,
+                                           analysisplan = analysisplan,
+                                           weighting = weights,
+                                           questionnaire = questionnaire
+                                           )
+
+labeled_results <- lapply(results$results, map_to_labeled,questionnaire)
+#labeled_results_mantika <- lapply(results_mantika$results, map_to_labeled,questionnaire)
+
+map_to_master_table(results_object = results$results, filename = "./output/demographic_region.csv",questionnaire = questionnaire)
+
+saveRDS(results_groups,"output/results_groups.rds")
+saveRDS(results_mantika, "output/results_mantika.rds")
+#hypegrammaR:::map_to_generic_hierarchical_html(resultlist = results,
+                                               #render_result_with = hypegrammaR:::from_result_map_to_md_table,
+                                               #by_analysisplan_columns = c("dependent.var", "repeat.var.value"),
+                                               #by_prefix = c("indicator: ","Mantika:"),
+                                               #level = 2,
+                                               #questionnaire = questionnaire,
+                                               #dir = "./output",
+                                               #filename = "overall_Mantika_output.html")
+
+
+group_diff_case <- map_to_case(hypothesis.type = "group_difference",
+                    dependent.var.type = "numerical",
+                    independent.var.type = "categorical")
+group_diff_case <- map_to_case(hypothesis.type = "group_difference_median",
+                               dependent.var.type = "numerical",
+                               independent.var.type = "categorical")
+group_diff_case <- map_to_case(hypothesis.type = "group_difference_median",
+                               dependent.var.type = "numerical",
+                               independent.var.type = "categorical")
+
+result <-map_to_result(data = cash_data,
+                      dependent.var = "total_expenditures",
+                      independent.var = "family_size",
+                      case = group_diff_case,
+                      weighting = weights,
+                      questionnaire = questionnaire)[[2]][,c(3,4,5)]
+
+direct_case <- map_to_case(hypothesis.type = "direct_reporting",
+                           dependent.var.type = "categorical")
+direct_case <- map_to_case(hypothesis.type = "direct_reporting",
+                           dependent.var.type = "numerical")
+direct_case <- map_to_case(hypothesis.type = "direct_reporting_sum",
+                           dependent.var.type = "numerical")
+direct_case <- map_to_case(hypothesis.type = "direct_reporting_median",
+                           dependent.var.type = "numerical")
+
+result <- map_to_result(data = composite_data,
+                           dependent.var = "impact_score",
+                           case = direct_case,
+                           weighting = weights,
+                           questionnaire = questionnaire
+                           )[[2]][,c(3,5)]
+
+map_to_visualisation(case_result)
+
+result %>% map_to_labeled(questionnaire) -> result_labeled
+map_to_file(result_labeled$summary.statistic,"../final_analysis/analysis_requests/_median_total_expenditure_hh_size.csv")
+

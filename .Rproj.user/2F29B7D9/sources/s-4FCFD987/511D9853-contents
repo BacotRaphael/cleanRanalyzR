@@ -1,0 +1,3 @@
+db<-db%>%prepdata(.,F)
+names(db)[!str_count(names(db),"[.]")<2]
+all(str_count(names(db),"[.]")<2)

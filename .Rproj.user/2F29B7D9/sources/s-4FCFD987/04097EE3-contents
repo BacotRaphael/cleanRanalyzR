@@ -1,0 +1,79 @@
+library(shiny)
+options(shiny.maxRequestSize = 60 * 1024^2)
+
+ui <- fluidPage(
+    titlePanel("RUN  Analysis"),
+    sidebarLayout(
+        sidebarPanel(
+            fileInput("db", "DATASET (.csv or .xlsx)", accept = c(".csv",".xlsx","xls")),
+            tags$hr(),
+            fileInput("questionnaire", "Questionnaire workbook", accept = c(".xlsx","xls")),
+            tags$hr(),
+            fileInput("dap", "Choose DAP (.csv)", accept = c(".csv")),
+            tags$hr(),
+            actionButton("start", "Run Analysis"),
+            tags$hr(),
+            downloadButton("download", "Download")
+            ),
+    mainPanel(
+        dataTableOutput("preview"))
+    )
+)
+
+server <- function(input, output, session) {
+    db <- reactive({
+        req(input$db)
+        ext <- tools::file_ext(input$db$name)
+        switch(ext,
+               csv=read.csv(input$db$datapath,stringsAsFactors = F) %>% readr::type_convert(),
+               xlsx=readxl::read_excel(input$db$datapath,1,col_types = "text") %>% readr::type_convert(),
+               validate("Invalid file; Please upload a .csv .xlsx or .xls file"))
+    })
+    survey <- reactive({
+        req(input$questionnaire)
+        df<-readxl::read_excel(input$questionnaire$datapath,1)
+    })
+    choices <- reactive({
+        req(input$questionnaire)
+        df<-readxl::read_excel(input$questionnaire$datapath,2)
+    })
+    dap <- reactive({
+        req(input$dap)
+        tryCatch(
+            {
+                df <- read.csv(input$dap$datapath)
+            },
+            error = function(e) {
+                stop(safeError(e))
+            }
+        )
+    })
+    questionnaire<-reactive({
+        q<-load_questionnaire(data = db(),
+                              questions = survey(),
+                              choices = choices(),
+                              choices.label.column.to.use = "label")
+    })
+    run<-eventReactive(input$start, {
+        results<-from_analysisplan_map_to_output(data = db(),
+                                                 analysisplan = dap(),
+                                                 questionnaire = questionnaire(),
+                                                 labeled = F)
+        final_result<- results$results %>%
+            lapply(function(x){x$summary.statistic}) %>% do.call(rbind, .)
+    })
+    
+    output$preview <- renderDataTable({
+        run()
+    })
+    
+    output$download <- downloadHandler(
+        filename = function() {
+            paste0("output-",Sys.Date(),".csv")
+        },
+        content = function(file) {
+            write.csv(run(), file, row.names = FALSE)
+        }
+    )
+}
+shinyApp(ui, server)
