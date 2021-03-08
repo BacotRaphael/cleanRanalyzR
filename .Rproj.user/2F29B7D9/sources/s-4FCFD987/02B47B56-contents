@@ -1,3 +1,0 @@
-ifelse(str_count(names(db),"[.]")>1,FALSE,TRUE)
-
-FALSE%in%str_count(names(db),"[.]")>1

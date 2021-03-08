@@ -342,11 +342,11 @@ server <- function(input, output, session) {
   )
   output$dwconv <- shiny::downloadHandler(
     filename = function() {
-      paste0("Converted_data-",humanTime(),".csv")
+      paste0("Converted_data-",humanTime(),".xlsx")
     },
     content = function(file) {
       xout<-forout_conv$x
-      write.csv(xout, file, row.names = FALSE)
+      write_xlsx(xout, file)
     }
   )
   output$dwres <- shiny::downloadHandler(

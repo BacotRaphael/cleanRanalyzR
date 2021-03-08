@@ -1,8 +1,0 @@
-make_analysisplan_all_vars(q)
-q<-load_questionnaire(data = db,
-                      questions = survey,
-                      choices = choices,
-                      choices.label.column.to.use = "label::French (fr)")
-
-make_analysisplan_all_vars(q)
-q<-load_questionnaire_without_data(survey,choices,"label::French (fr)")

@@ -25,7 +25,7 @@ map_to_datatypes<-function(df,questionnaire){
   types[types_raw == "text"] <- "text"
   types[types_raw == "calculate"] <- "numerical"
   types[types_raw == "calculate"] <- "numerical"
-  types[str_detect(types_raw$type,"deviceid|start|today|note|begin|end|group")] <-NA
+  types[str_detect(types_raw$type,"deviceid|start|today|note|begin|end|group|geopoint")] <-NA
   
   types
 }

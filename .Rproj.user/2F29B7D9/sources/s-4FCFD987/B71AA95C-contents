@@ -1,3 +1,0 @@
-db<-db %>% prepdata()
-db<-db[which(!is.na(db$uuid)),]
-t<- cleaning_data(db,clog,survey,choices)
